@@ -1,7 +1,7 @@
 {
   "name": "cybercrime-portal-backend",
   "version": "1.0.0",
-  "description": "A comprehensive backend system for managing cybercrime reports with AI-powered analysis",
+  "description": "A comprehensive backend system for managing cybercrime reports with AI-powered analysis using Supabase",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
@@ -14,8 +14,6 @@
     "build": "echo 'No build step required for Node.js'",
     "docker:build": "docker build -t cybercrime-backend .",
     "docker:run": "docker run -p 5001:5001 cybercrime-backend",
-    "db:migrate": "node scripts/migrate.js",
-    "db:seed": "node scripts/seed.js",
     "health": "curl http://localhost:5001/health",
     "help": "echo 'Available commands: npm start, npm run dev, npm run setup, npm run health'"
   },
@@ -26,18 +24,13 @@
     "ml",
     "nodejs",
     "express",
-    "postgresql",
-    "python"
+    "supabase"
   ],
   "author": "Cybercrime Portal Team",
   "license": "MIT",
   "type": "module",
   "dependencies": {
-    "@clerk/clerk-sdk-node": "^4.13.23",
-    "@neondatabase/serverless": "^1.0.1",
-    "@upstash/ratelimit": "^2.0.5",
-    "@upstash/redis": "^1.34.9",
-    "bcryptjs": "^2.4.3",
+    "@supabase/supabase-js": "^2.56.0",
     "body-parser": "^2.2.0",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
@@ -46,15 +39,10 @@
     "express-rate-limit": "^7.1.5",
     "helmet": "^7.2.0",
     "jsonwebtoken": "^9.0.2",
-    "node-fetch": "^3.3.2",
     "multer": "^1.4.5-lts.1",
-    "nodemailer": "^6.9.7",
-    "postgres": "^3.4.7",
-    "twilio": "^4.19.0",
+    "node-fetch": "^3.3.2",
     "uuid": "^11.1.0",
-    "winston": "^3.11.0",
-    "@fingerprintjs/fingerprintjs-pro-server-api": "^5.2.0",
-    "request-ip": "^3.3.0"
+    "winston": "^3.11.0"
   },
   "devDependencies": {
     "@babel/core": "^7.23.5",

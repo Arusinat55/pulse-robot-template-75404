@@ -1,5 +1,8 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -21,6 +24,26 @@ import { ReportSuspiciousTab } from "@/components/dashboard/ReportSuspiciousTab"
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("profile");
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Success",
+        description: "Signed out successfully"
+      });
+      navigate('/');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out",
+        variant: "destructive"
+      });
+    }
+  };
 
   // Mock user data - This will come from Supabase when integrated
   const userData = {
@@ -98,7 +121,7 @@ const Dashboard = () => {
                   <p className="text-xs text-muted-foreground">{userData.email}</p>
                 </div>
               </div>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4" />
               </Button>
             </div>
@@ -111,7 +134,7 @@ const Dashboard = () => {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-3xl font-bold">Welcome back, {userData.name.split(' ')[0]}!</h2>
+              <h2 className="text-3xl font-bold">Welcome back, {user?.email?.split('@')[0] || 'User'}!</h2>
               <p className="text-muted-foreground">
                 Monitor your security reports and manage your account
               </p>
