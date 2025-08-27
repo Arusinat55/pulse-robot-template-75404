@@ -11,8 +11,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [formData, setFormData] = useState({
+    emailOrAadhar: "",
+    password: ""
+  });
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -35,6 +37,30 @@ const Login = () => {
     setIsLoading(true);
     
     try {
+      let email = formData.emailOrAadhar;
+      
+      // Check if input is Aadhar number (12 digits)
+      if (/^\d{12}$/.test(formData.emailOrAadhar)) {
+        // Find email by Aadhar number
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('aadhar_number', formData.emailOrAadhar)
+          .single();
+          
+        if (profileError || !profileData) {
+          toast({
+            title: "Error",
+            description: "No account found with this Aadhar number",
+            variant: "destructive"
+          });
+          setIsLoading(false);
+          return;
+        }
+        
+        email = profileData.email;
+      }
+      
       if (!otpSent) {
         // Send OTP via Supabase
         const { error } = await supabase.auth.signInWithOtp({
@@ -97,8 +123,8 @@ const Login = () => {
     try {
       // Admin login with email and password
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
+        email: formData.emailOrAadhar,
+        password: formData.password
       });
       
       if (error) {
@@ -158,15 +184,15 @@ const Login = () => {
                 <TabsContent value="user">
                   <form onSubmit={handleUserLogin} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="user-email">Email</Label>
+                      <Label htmlFor="user-email">Email or Aadhar Number</Label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="user-email"
-                          type="email"
-                          placeholder="Enter your email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
+                          type="text"
+                          placeholder="Enter your email or 12-digit Aadhar number"
+                          value={formData.emailOrAadhar}
+                          onChange={(e) => setFormData({...formData, emailOrAadhar: e.target.value})}
                           className="pl-10"
                           required
                         />
@@ -233,8 +259,8 @@ const Login = () => {
                           id="admin-email"
                           type="email"
                           placeholder="Enter admin email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
+                          value={formData.emailOrAadhar}
+                          onChange={(e) => setFormData({...formData, emailOrAadhar: e.target.value})}
                           className="pl-10"
                           required
                         />
@@ -248,8 +274,8 @@ const Login = () => {
                           id="admin-password"
                           type="password"
                           placeholder="Enter password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
+                          value={formData.password}
+                          onChange={(e) => setFormData({...formData, password: e.target.value})}
                           className="pl-10"
                           required
                         />

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,61 +7,85 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { 
-  FileText, 
-  Upload, 
-  AlertCircle, 
-  Clock, 
-  CheckCircle,
-  Eye,
-  Send
-} from "lucide-react";
+import { AlertTriangle, Upload, Send, X, FileText, Clock, AlertCircle, CheckCircle, Eye } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useReports } from "@/hooks/useReports";
 
 const ReportGrievanceTab = () => {
-  const [reportData, setReportData] = useState({
+  const [formData, setFormData] = useState({
     title: "",
-    category: "",
-    priority: "",
     description: "",
-    files: [] as File[]
+    category: "",
+    severity: ""
   });
+  const [files, setFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
-    // Submit grievance report - This will connect to Supabase when integrated
-    console.log("Submitting grievance report:", reportData);
-    
-    // Reset form after submission
-    setTimeout(() => {
-      setReportData({
-        title: "",
-        category: "",
-        priority: "",
-        description: "",
-        files: []
-      });
-      setIsSubmitting(false);
-    }, 2000);
-  };
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  const { createReport, uploadFile } = useReports();
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
-      setReportData(prev => ({
-        ...prev,
-        files: [...prev.files, ...newFiles]
-      }));
+      setFiles(prev => [...prev, ...newFiles]);
     }
   };
 
   const removeFile = (index: number) => {
-    setReportData(prev => ({
-      ...prev,
-      files: prev.files.filter((_, i) => i !== index)
-    }));
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      // Create the report first
+      const { data: report, error: reportError } = await createReport({
+        type: 'grievance',
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        severity: formData.severity,
+        file_urls: null
+      });
+
+      if (reportError || !report) {
+        throw new Error('Failed to create report');
+      }
+
+      // Upload files if any
+      const uploadPromises = files.map(file => uploadFile(file, report.id));
+      const uploadResults = await Promise.all(uploadPromises);
+      
+      const fileUrls = uploadResults
+        .filter(result => result.data)
+        .map(result => result.data as string);
+
+      toast({
+        title: "Report Submitted",
+        description: "Your grievance report has been submitted successfully and is under review."
+      });
+
+      // Reset form
+      setFormData({
+        title: "",
+        description: "",
+        category: "",
+        severity: ""
+      });
+      setFiles([]);
+
+    } catch (error) {
+      console.error('Submit error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit report. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Mock existing reports
@@ -135,8 +159,8 @@ const ReportGrievanceTab = () => {
                 <Input
                   id="title"
                   placeholder="Brief description of the issue"
-                  value={reportData.title}
-                  onChange={(e) => setReportData({...reportData, title: e.target.value})}
+                  value={formData.title}
+                  onChange={(e) => setFormData({...formData, title: e.target.value})}
                   required
                 />
               </div>
@@ -145,8 +169,8 @@ const ReportGrievanceTab = () => {
                 <div className="space-y-2">
                   <Label htmlFor="category">Category</Label>
                   <Select
-                    value={reportData.category}
-                    onValueChange={(value) => setReportData({...reportData, category: value})}
+                    value={formData.category}
+                    onValueChange={(value) => setFormData({...formData, category: value})}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
@@ -165,8 +189,8 @@ const ReportGrievanceTab = () => {
                 <div className="space-y-2">
                   <Label htmlFor="priority">Priority Level</Label>
                   <Select
-                    value={reportData.priority}
-                    onValueChange={(value) => setReportData({...reportData, priority: value})}
+                    value={formData.severity}
+                    onValueChange={(value) => setFormData({...formData, severity: value})}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select priority" />
@@ -186,8 +210,8 @@ const ReportGrievanceTab = () => {
                 <Textarea
                   id="description"
                   placeholder="Provide detailed information about the grievance..."
-                  value={reportData.description}
-                  onChange={(e) => setReportData({...reportData, description: e.target.value})}
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
                   rows={4}
                   required
                 />
@@ -218,9 +242,9 @@ const ReportGrievanceTab = () => {
                   </label>
                 </div>
 
-                {reportData.files.length > 0 && (
+                {files.length > 0 && (
                   <div className="space-y-2">
-                    {reportData.files.map((file, index) => (
+                    {files.map((file, index) => (
                       <div
                         key={index}
                         className="flex items-center justify-between p-2 bg-muted rounded-md"

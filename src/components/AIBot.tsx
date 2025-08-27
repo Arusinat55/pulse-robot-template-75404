@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Bot, 
@@ -35,10 +35,7 @@ export const AIBot = () => {
   ]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { session } = useAuth();
   const { toast } = useToast();
-
-  const API_BASE_URL = 'http://localhost:5001/api';
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -51,54 +48,35 @@ export const AIBot = () => {
     };
 
     setMessages(prev => [...prev, userMessage]);
-    const messageContent = inputMessage;
+    const currentMessage = inputMessage;
     setInputMessage("");
     setIsLoading(true);
 
     try {
-      if (session) {
-        const response = await fetch(`${API_BASE_URL}/ai/chat`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`
-          },
-          body: JSON.stringify({ message: messageContent })
-        });
+      const { data, error } = await supabase.functions.invoke('ai-assistant', {
+        body: { message: currentMessage }
+      });
 
-        const data = await response.json();
+      if (error) throw error;
 
-        if (response.ok) {
-          const botMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            content: data.response,
-            sender: 'bot',
-            timestamp: new Date()
-          };
-          setMessages(prev => [...prev, botMessage]);
-        } else {
-          throw new Error(data.error || 'Failed to get AI response');
-        }
-      } else {
-        // Fallback to demo response if not authenticated
-        const botMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: generateAIResponse(messageContent),
-          sender: 'bot',
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, botMessage]);
-      }
+      const botMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: data.response || "I apologize, but I'm having trouble processing your request right now. Please try again.",
+        sender: 'bot',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, botMessage]);
     } catch (error) {
-      console.error('AI chat error:', error);
+      console.error('AI Bot error:', error);
       toast({
         title: "Error",
         description: "Failed to get AI response. Please try again.",
         variant: "destructive"
       });
+      
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: 'Sorry, I encountered an error. Please try again later.',
+        content: "I'm sorry, I'm experiencing technical difficulties. Please try again later or contact support if the issue persists.",
         sender: 'bot',
         timestamp: new Date()
       };

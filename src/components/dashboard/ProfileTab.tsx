@@ -18,6 +18,8 @@ import {
   X
 } from "lucide-react";
 
+import { UserProfile } from "@/hooks/useProfile";
+
 interface ProfileTabProps {
   userData: {
     name: string;
@@ -29,9 +31,10 @@ interface ProfileTabProps {
     reportsSubmitted: number;
     status: string;
   };
+  profile?: UserProfile | null;
 }
 
-export const ProfileTab = ({ userData }: ProfileTabProps) => {
+export const ProfileTab = ({ userData, profile }: ProfileTabProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState(userData);
 

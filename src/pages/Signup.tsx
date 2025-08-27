@@ -13,6 +13,7 @@ const Signup = () => {
     fullName: "",
     email: "",
     phone: "",
+    aadharNumber: "",
     organization: "",
     password: ""
   });
@@ -44,6 +45,7 @@ const Signup = () => {
           data: {
             full_name: formData.fullName,
             phone_number: formData.phone,
+            aadhar_number: formData.aadharNumber,
             organization: formData.organization
           }
         }
@@ -148,6 +150,26 @@ const Signup = () => {
                       value={formData.phone}
                       onChange={(e) => handleInputChange("phone", e.target.value)}
                       className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="aadharNumber">Aadhar Number *</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="aadharNumber"
+                      type="text"
+                      placeholder="Enter your 12-digit Aadhar number"
+                      value={formData.aadharNumber}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 12);
+                        handleInputChange("aadharNumber", value);
+                      }}
+                      className="pl-10"
+                      maxLength={12}
                       required
                     />
                   </div>

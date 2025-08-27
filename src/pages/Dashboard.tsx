@@ -21,12 +21,17 @@ import {
 import { ProfileTab } from "@/components/dashboard/ProfileTab";
 import { ReportGrievanceTab } from "@/components/dashboard/ReportGrievanceTab";
 import { ReportSuspiciousTab } from "@/components/dashboard/ReportSuspiciousTab";
+import { MyReportsTab } from "@/components/dashboard/MyReportsTab";
+import { useProfile } from "@/hooks/useProfile";
+import { useReports } from "@/hooks/useReports";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("profile");
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { profile, loading: profileLoading } = useProfile();
+  const { reports, loading: reportsLoading } = useReports();
 
   const handleSignOut = async () => {
     try {
@@ -45,39 +50,42 @@ const Dashboard = () => {
     }
   };
 
-  // Mock user data - This will come from Supabase when integrated
+  // Get user data from profile or use defaults
   const userData = {
-    name: "John Doe",
-    email: "john.doe@example.com",
-    phone: "+1 (555) 123-4567",
-    organization: "Tech Corp",
-    avatar: "",
-    joinDate: "2024-01-15",
-    reportsSubmitted: 12,
+    name: profile?.full_name || "User",
+    email: profile?.email || user?.email || "",
+    phone: profile?.phone || "",
+    organization: profile?.organization || "",
+    avatar: profile?.avatar_url || "",
+    joinDate: profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : "",
+    reportsSubmitted: reports.length,
     status: "Verified"
   };
 
+  const pendingReports = reports.filter(r => r.status === 'pending').length;
+  const resolvedReports = reports.filter(r => r.status === 'resolved').length;
+  
   const stats = [
     {
       title: "Total Reports",
-      value: "12",
+      value: reports.length.toString(),
       description: "Reports submitted",
       icon: FileText,
-      trend: "+2 this month"
+      trend: reportsLoading ? "Loading..." : `${reports.length} total`
     },
     {
       title: "Pending Review",
-      value: "3",
+      value: pendingReports.toString(),
       description: "Awaiting analysis",
       icon: AlertTriangle,
-      trend: "Updated today"
+      trend: pendingReports > 0 ? "Needs attention" : "All clear"
     },
     {
       title: "Resolved Cases",
-      value: "8",
+      value: resolvedReports.toString(),
       description: "Successfully resolved",
       icon: Shield,
-      trend: "+1 this week"
+      trend: resolvedReports > 0 ? "Great work!" : "No resolved yet"
     },
     {
       title: "Security Score",
@@ -172,7 +180,7 @@ const Dashboard = () => {
         <Card className="border-border/50 shadow-xl">
           <CardContent className="p-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-6">
+              <TabsList className="grid w-full grid-cols-4 mb-6">
                 <TabsTrigger value="profile" className="flex items-center gap-2">
                   <User className="h-4 w-4" />
                   Profile
@@ -185,10 +193,14 @@ const Dashboard = () => {
                   <AlertTriangle className="h-4 w-4" />
                   Report Suspicious
                 </TabsTrigger>
+                <TabsTrigger value="reports" className="flex items-center gap-2">
+                  <Activity className="h-4 w-4" />
+                  My Reports
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="profile">
-                <ProfileTab userData={userData} />
+                <ProfileTab userData={userData} profile={profile} />
               </TabsContent>
 
               <TabsContent value="grievance">
@@ -197,6 +209,10 @@ const Dashboard = () => {
 
               <TabsContent value="suspicious">
                 <ReportSuspiciousTab />
+              </TabsContent>
+
+              <TabsContent value="reports">
+                <MyReportsTab />
               </TabsContent>
             </Tabs>
           </CardContent>
